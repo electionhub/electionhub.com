@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Election Hub</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
+
+  :root{
+    --bg:#F5F6FA;
+    --surface:#FFFFFF;
+    --surface-2:#FAFBFD;
+    --ink:#15192B;
+    --ink-soft:#4A4F66;
+    --muted:#8A8FA3;
+    --primary:#3F5BF6;
+    --primary-dark:#2E45D6;
+    --accent:#F5A623;
+    --success:#1FAE6B;
+    --danger:#E0455A;
+    --danger-dark:#C03447;
+    --border:rgba(21,25,43,0.09);
+    --shadow:0 8px 24px rgba(21,25,43,0.07);
+    --shadow-lg:0 16px 40px rgba(21,25,43,0.14);
+    --radius:16px;
+  }
+  [data-theme="dark"]{
+    --bg:#0E1018;
+    --surface:#171A26;
+    --surface-2:#1D2030;
+    --ink:#ECEDF2;
+    --ink-soft:#B7BACB;
+    --muted:#74798E;
+    --primary:#6C82FF;
+    --primary-dark:#5468E8;
+    --accent:#F5B94A;
+    --success:#34C97F;
+    --danger:#F0596D;
+    --danger-dark:#D43B50;
+    --border:rgba(255,255,255,0.08);
+    --shadow:0 8px 24px rgba(0,0,0,0.35);
+    --shadow-lg:0 20px 48px rgba(0,0,0,0.5);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    -webkit-tap-highlight-color: transparent;
+    transition:background .2s, color .2s;
+  }
+  .mono{font-family:'JetBrains Mono',monospace;}
+  h1,h2,h3{font-family:'Sora',sans-serif; margin:0;}
+  img{max-width:100%; display:block;}
+  button{font-family:inherit;}
+
+  /* ===== Layout shells ===== */
+  .app-shell{display:flex; min-height:100vh;}
+  .main-col{flex:1; min-width:0; display:flex; flex-direction:column;}
+
+  /* ===== Top bar ===== */
+  .topbar{
+    position:sticky; top:0; z-index:40;
+    background:var(--surface);
+    border-bottom:1px solid var(--border);
+    padding:14px 18px;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:10px;
+  }
+  .brand{display:flex; align-items:center; gap:10px; min-width:0;}
+  .brand-logo{
+    width:38px; height:38px; border-radius:11px; flex-shrink:0;
+    background:linear-gradient(135deg, var(--primary), var(--primary-dark));
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+    box-shadow:0 4px 10px rgba(63,91,246,0.35);
+  }
+  .brand-logo img{width:78%; height:78%; object-fit:contain;}
+  .brand-logo .fallback{color:#fff; font-family:'Sora',sans-serif; font-weight:700; font-size:15px;}
+  .brand-text{display:flex; flex-direction:column; line-height:1.2; min-width:0;}
+  .brand-text .eyebrow{font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); font-weight:600;}
+  .brand-text .title{font-size:15px; font-weight:700; font-family:'Sora',sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:46vw;}
+
+  .top-actions{display:flex; align-items:center; gap:8px;}
+  .icon-btn{
+    width:38px; height:38px; border-radius:11px; border:1px solid var(--border);
+    background:var(--surface-2); color:var(--ink-soft); display:flex; align-items:center; justify-content:center;
+    cursor:pointer; font-size:17px; transition:.15s; flex-shrink:0;
+  }
+  .icon-btn:hover{border-color:var(--primary); color:var(--primary);}
+
+  .nav-pills{display:flex; gap:6px; background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:4px;}
+  .pill{
+    border:none; background:transparent; color:var(--ink-soft);
+    padding:8px 14px; border-radius:9px; font-size:13px; font-weight:600;
+    cursor:pointer; font-family:'Inter',sans-serif; transition:.15s; white-space:nowrap;
+  }
+  .pill.active{background:var(--primary); color:#fff; box-shadow:0 4px 10px rgba(63,91,246,0.3);}
+
+  .wrap{max-width:760px; margin:0 auto; padding:18px 16px 100px; width:100%;}
+
+  /* ===== Status strip ===== */
+  .status-strip{
+    display:flex; align-items:center; gap:10px; padding:11px 14px; border-radius:12px;
+    background:var(--surface); border:1px solid var(--border); margin-bottom:16px; font-size:13px;
+  }
+  .status-strip.open{border-color:rgba(31,174,107,0.35); background:rgba(31,174,107,0.07);}
+  .status-strip.closed{border-color:rgba(224,69,90,0.3); background:rgba(224,69,90,0.06);}
+  .status-dot{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
+  .status-dot.open{background:var(--success); box-shadow:0 0 0 4px rgba(31,174,107,0.18); animation:pulse 1.6s infinite;}
+  .status-dot.closed{background:var(--danger);}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+  .status-strip .label{font-weight:600; flex:1;}
+  .status-strip .time{color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:12px;}
+
+  /* ===== Cards ===== */
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:20px;
+    margin-bottom:16px;
+  }
+  .card-title{font-size:15px; font-weight:700; margin-bottom:4px; font-family:'Sora',sans-serif;}
+  .card-sub{font-size:12.5px; color:var(--muted); margin-bottom:14px;}
+  .eyebrow{
+    font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--primary); font-weight:700; margin-bottom:6px; display:block;
+  }
+
+  /* ===== Dashboard stat grid ===== */
+  .stat-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:16px;}
+  .stat-card{
+    background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px;
+    box-shadow:var(--shadow);
+  }
+  .stat-card .num{font-family:'Sora',sans-serif; font-size:26px; font-weight:800; line-height:1;}
+  .stat-card .lbl{font-size:11.5px; color:var(--muted); margin-top:6px; font-weight:600;}
+  .stat-card.accent-primary .num{color:var(--primary);}
+  .stat-card.accent-success .num{color:var(--success);}
+  .stat-card.accent-accent .num{color:var(--accent);}
+  .stat-card.accent-danger .num{color:var(--danger);}
+
+  /* ===== Forms ===== */
+  label{font-size:12.5px; font-weight:600; color:var(--ink-soft); display:block; margin-bottom:5px;}
+  input[type=text], input[type=password], input[type=number], input[type=datetime-local], select, textarea{
+    width:100%; padding:12px 14px; border:1.5px solid var(--border); border-radius:11px;
+    font-family:'Inter',sans-serif; font-size:14.5px; background:var(--surface-2); color:var(--ink);
+    margin-bottom:12px; transition:.15s;
+  }
+  input:focus, select:focus, textarea:focus{outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(63,91,246,0.12);}
+  ::placeholder{color:var(--muted);}
+
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:7px;
+    border:none; border-radius:12px; padding:13px 18px; font-weight:700; font-size:14px;
+    cursor:pointer; font-family:'Inter',sans-serif; width:100%; transition:transform .1s, box-shadow .15s;
+  }
+  .btn:active{transform:scale(0.98);}
+  .btn:disabled{opacity:.4; cursor:not-allowed;}
+  .btn-primary{background:var(--primary); color:#fff; box-shadow:0 6px 16px rgba(63,91,246,0.3);}
+  .btn-danger{background:var(--danger); color:#fff; box-shadow:0 6px 16px rgba(224,69,90,0.3);}
+  .btn-success{background:var(--success); color:#fff;}
+  .btn-outline{background:transparent; border:1.5px solid var(--border); color:var(--ink);}
+  .btn-ghost{background:var(--surface-2); color:var(--ink-soft); border:1px solid var(--border);}
+  .btn-sm{padding:9px 14px; font-size:13px; width:auto;}
+  .btn-row{display:flex; gap:8px;}
+  .btn-row .btn{flex:1;}
+  .error-text{color:var(--danger); font-size:12.5px; margin-top:-4px; margin-bottom:10px; min-height:14px;}
+
+  /* ===== Login screen ===== */
+  .login-screen{
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
+    background:var(--bg);
+  }
+  .login-card{
+    background:var(--surface); border:1px solid var(--border); border-radius:22px;
+    box-shadow:var(--shadow-lg); padding:38px 28px; max-width:380px; width:100%; text-align:center;
+  }
+  .login-card .seal{
+    width:58px; height:58px; border-radius:16px; margin:0 auto 18px;
+    background:linear-gradient(135deg, var(--primary), var(--primary-dark));
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+    box-shadow:0 8px 20px rgba(63,91,246,0.35);
+  }
+  .login-card .seal img{width:78%; height:78%; object-fit:contain;}
+  .login-card .seal .fallback{color:#fff; font-family:'Sora',sans-serif; font-weight:800; font-size:22px;}
+  .login-card h1{font-size:21px; margin-bottom:4px;}
+  .login-card p{color:var(--muted); font-size:13px; margin:6px 0 22px;}
+
+  /* ===== Logo upload ===== */
+  .upload-box{
+    border:1.5px dashed var(--border); border-radius:14px; padding:18px; text-align:center;
+    cursor:pointer; transition:.15s; margin-bottom:12px; background:var(--surface-2);
+  }
+  .upload-box:hover{border-color:var(--primary);}
+  .upload-box .icon{font-size:24px; margin-bottom:6px;}
+  .upload-box .txt{font-size:12.5px; color:var(--muted); font-weight:600;}
+  .upload-preview{
+    display:flex; align-items:center; gap:12px; padding:10px; border:1px solid var(--border);
+    border-radius:12px; background:var(--surface-2); margin-bottom:12px;
+  }
+  .upload-preview img{width:50px; height:50px; border-radius:10px; object-fit:cover; flex-shrink:0;}
+  .upload-preview .meta{flex:1; min-width:0;}
+  .upload-preview .meta .nm{font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .upload-preview .meta .sz{font-size:11px; color:var(--muted);}
+
+  /* ===== Ballot / voting ===== */
+  .ballot-header{
+    display:flex; align-items:center; gap:14px; padding:6px 0 18px;
+  }
+  .ballot-header .logo-circle{
+    width:54px; height:54px; border-radius:16px; flex-shrink:0; overflow:hidden;
+    background:linear-gradient(135deg, var(--primary), var(--primary-dark));
+    display:flex; align-items:center; justify-content:center; box-shadow:0 6px 16px rgba(63,91,246,0.3);
+  }
+  .ballot-header .logo-circle img{width:78%; height:78%; object-fit:contain;}
+  .ballot-header .logo-circle .fallback{color:#fff; font-family:'Sora',sans-serif; font-weight:800; font-size:20px;}
+  .ballot-header h2{font-size:20px;}
+  .ballot-header .sub{font-size:12.5px; color:var(--muted); margin-top:2px;}
+
+  .position-card h3{font-size:16px; color:var(--ink); margin-bottom:14px; display:flex; align-items:center; gap:8px;}
+  .position-card h3::before{content:""; width:4px; height:16px; background:var(--primary); display:inline-block; border-radius:2px;}
+
+  .candidate-grid{display:grid; grid-template-columns:1fr; gap:10px;}
+  .candidate-row{
+    display:flex; align-items:center; gap:13px;
+    border:1.5px solid var(--border); border-radius:14px; padding:12px;
+    cursor:pointer; background:var(--surface-2); position:relative; transition:.12s;
+  }
+  .candidate-row:hover{border-color:var(--primary);}
+  .candidate-row.selected{border-color:var(--primary); background:rgba(63,91,246,0.07); box-shadow:0 0 0 3px rgba(63,91,246,0.1);}
+  .cand-photo{
+    width:48px; height:48px; border-radius:12px; object-fit:cover; flex-shrink:0;
+    background:linear-gradient(135deg, var(--muted), var(--ink-soft));
+  }
+  .cand-photo-fallback{
+    width:48px; height:48px; border-radius:12px; flex-shrink:0;
+    background:linear-gradient(135deg, var(--primary), var(--primary-dark));
+    display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-family:'Sora',sans-serif;
+  }
+  .cand-name{font-weight:700; font-size:15px;}
+  .cand-meta{font-size:12px; color:var(--muted); margin-top:1px;}
+  .check-ring{
+    width:24px; height:24px; border-radius:50%; border:2px solid var(--border); flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; transition:.12s; margin-left:auto;
+  }
+  .candidate-row.selected .check-ring{border-color:var(--primary); background:var(--primary);}
+  .check-ring svg{width:13px; height:13px; opacity:0; transform:scale(0); transition:.15s;}
+  .candidate-row.selected .check-ring svg{opacity:1; transform:scale(1);}
+
+  .submit-bar{
+    position:fixed; bottom:0; left:0; right:0; background:var(--surface);
+    border-top:1px solid var(--border); padding:12px 16px; box-shadow:0 -8px 24px rgba(0,0,0,0.08);
+    display:flex; gap:10px; align-items:center; z-index:40;
+  }
+  .submit-bar .progress-txt{font-size:12px; color:var(--muted); flex:1;}
+
+  /* ===== Confirm overlay ===== */
+  .seal-overlay{
+    position:fixed; inset:0; background:rgba(14,16,24,0.92); z-index:100;
+    display:flex; align-items:center; justify-content:center; flex-direction:column;
+    opacity:0; pointer-events:none; transition:opacity .25s;
+  }
+  .seal-overlay.show{opacity:1; pointer-events:all;}
+  .check-stamp{
+    width:96px; height:96px; border-radius:28px;
+    background:linear-gradient(135deg, var(--success), #138a52);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 20px 50px rgba(31,174,107,0.4);
+    transform:scale(2) rotate(-6deg); opacity:0;
+  }
+  .seal-overlay.show .check-stamp{ animation: stampDown .5s cubic-bezier(.2,1.6,.4,1) forwards; }
+  @keyframes stampDown{
+    0%{transform:scale(2) rotate(-6deg); opacity:0;}
+    60%{transform:scale(0.94) rotate(2deg); opacity:1;}
+    100%{transform:scale(1) rotate(0deg); opacity:1;}
+  }
+  .check-stamp svg{width:46px; height:46px;}
+  .seal-overlay .confirm-text{color:#fff; font-family:'Sora',sans-serif; font-weight:700; font-size:19px; margin-top:22px; opacity:0;}
+  .seal-overlay.show .confirm-text{animation: fadeUp .4s ease .4s forwards;}
+  @keyframes fadeUp{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+  .seal-overlay .confirm-sub{color:rgba(255,255,255,0.55); font-size:13px; margin-top:6px; opacity:0;}
+  .seal-overlay.show .confirm-sub{animation: fadeUp .4s ease .55s forwards;}
+
+  /* ===== Results ===== */
+  .live-badge{
+    display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:700;
+    color:var(--danger); letter-spacing:.07em; text-transform:uppercase;
+  }
+  .live-dot{width:7px; height:7px; border-radius:50%; background:var(--danger); animation:pulse 1.4s infinite;}
+
+  .result-row{margin-bottom:16px;}
+  .result-row .rname{display:flex; justify-content:space-between; align-items:center; margin-bottom:7px; gap:8px;}
+  .result-row .rname .left{display:flex; align-items:center; gap:8px; min-width:0;}
+  .result-row .rname .name{font-weight:700; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .result-row .rname .pct{font-family:'JetBrains Mono',monospace; font-weight:600; font-size:13px; color:var(--ink-soft); flex-shrink:0;}
+  .gauge-track{height:12px; background:var(--surface-2); border-radius:8px; overflow:hidden; border:1px solid var(--border);}
+  .gauge-fill{
+    height:100%; border-radius:8px; background:linear-gradient(90deg, var(--primary), var(--primary-dark));
+    width:0%; transition:width 1s cubic-bezier(.2,.8,.2,1);
+  }
+  .result-row.leader .gauge-fill{background:linear-gradient(90deg, var(--accent), #d6900f);}
+  .result-row.leader .badge-crown{margin-right:2px;}
+  .vote-count{font-size:11px; color:var(--muted); margin-top:4px;}
+  .mini-photo{width:26px; height:26px; border-radius:8px; object-fit:cover; flex-shrink:0;}
+
+  .chart-card canvas{width:100% !important; max-height:240px;}
+
+  .empty-state{text-align:center; padding:44px 20px; color:var(--muted);}
+  .empty-state .glyph{font-size:34px; margin-bottom:10px;}
+  .empty-state h3{color:var(--ink); margin-bottom:4px;}
+
+  /* ===== Admin lists ===== */
+  .toggle-row{display:flex; align-items:center; justify-content:space-between; padding:11px 0;}
+  .toggle-row .meta{padding-right:10px;}
+  .toggle-row .meta .t{font-weight:700; font-size:14px;}
+  .toggle-row .meta .d{font-size:12px; color:var(--muted); margin-top:2px;}
+  .switch{
+    width:46px; height:26px; background:var(--border); border-radius:999px; position:relative; cursor:pointer; flex-shrink:0; border:none;
+  }
+  .switch.on{background:var(--primary);}
+  .switch::after{
+    content:""; position:absolute; top:2px; left:2px; width:22px; height:22px; background:#fff; border-radius:50%;
+    transition:.18s; box-shadow:0 1px 3px rgba(0,0,0,0.3);
+  }
+  .switch.on::after{left:22px;}
+  .divider{border:none; border-top:1px solid var(--border); margin:14px 0;}
+  .small-muted{font-size:12px; color:var(--muted);}
+
+  .position-admin-card{border:1px solid var(--border); border-radius:14px; padding:14px; margin-bottom:10px; background:var(--surface-2);}
+  .position-admin-card .ph{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;}
+  .position-admin-card .ph strong{font-size:14.5px; font-family:'Sora',sans-serif;}
+  .candidate-admin-row{display:flex; align-items:center; gap:10px; margin-bottom:7px; background:var(--surface); padding:9px; border-radius:11px; border:1px solid var(--border);}
+  .candidate-admin-row .cand-photo, .candidate-admin-row .cand-photo-fallback{width:34px; height:34px; border-radius:9px; font-size:13px;}
+  .candidate-admin-row span.nm{flex:1; font-size:13.5px; font-weight:600;}
+  .icon-btn-sm{background:none; border:none; cursor:pointer; color:var(--muted); font-size:15px; padding:4px; flex-shrink:0;}
+  .icon-btn-sm.danger{color:var(--danger);}
+  .row-flex{display:flex; gap:8px; margin-bottom:8px; align-items:flex-start;}
+  .row-flex input{margin-bottom:0;}
+  .photo-pick-btn{
+    width:46px; height:46px; border-radius:11px; border:1.5px dashed var(--border); background:var(--surface);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; overflow:hidden; font-size:16px; color:var(--muted);
+  }
+  .photo-pick-btn img{width:100%; height:100%; object-fit:cover;}
+
+  .footer-credit{text-align:center; font-size:11px; color:var(--muted); margin-top:10px; opacity:.7;}
+
+  /* ===== Admin Sidebar Dashboard ===== */
+  .admin-shell{display:flex; min-height:100vh; background:var(--bg);}
+  .admin-sidebar{
+    width:230px; background:#11152A; color:#C9CDE0; flex-shrink:0;
+    display:flex; flex-direction:column; padding:18px 14px;
+    position:sticky; top:0; height:100vh; overflow-y:auto;
+    transition:transform .25s; z-index:60;
+  }
+  [data-theme="dark"] .admin-sidebar{background:#0A0C16;}
+  .admin-sidebar .sb-brand{display:flex; align-items:center; gap:10px; padding:6px 8px 20px;}
+  .admin-sidebar .sb-brand .logo-mini{
+    width:34px; height:34px; border-radius:10px; flex-shrink:0; overflow:hidden;
+    background:linear-gradient(135deg, var(--primary), var(--primary-dark));
+    display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-family:'Sora',sans-serif; font-size:14px;
+  }
+  .admin-sidebar .sb-brand .logo-mini img{width:78%; height:78%; object-fit:contain;}
+  .admin-sidebar .sb-brand .nm{font-family:'Sora',sans-serif; font-weight:700; font-size:15px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .sb-nav{display:flex; flex-direction:column; gap:3px; flex:1;}
+  .sb-item{
+    display:flex; align-items:center; gap:11px; padding:11px 12px; border-radius:10px;
+    color:#AAB0CC; font-size:13.5px; font-weight:600; cursor:pointer; border:none; background:transparent;
+    text-align:left; width:100%; font-family:'Inter',sans-serif; transition:.15s;
+  }
+  .sb-item .ic{font-size:16px; width:20px; text-align:center; flex-shrink:0;}
+  .sb-item:hover{background:rgba(255,255,255,0.06); color:#fff;}
+  .sb-item.active{background:var(--primary); color:#fff; box-shadow:0 4px 14px rgba(63,91,246,0.35);}
+  .sb-footer{padding-top:14px; border-top:1px solid rgba(255,255,255,0.08); margin-top:10px;}
+
+  .admin-main{flex:1; min-width:0; display:flex; flex-direction:column;}
+  .admin-topbar{
+    background:var(--surface); border-bottom:1px solid var(--border);
+    padding:14px 22px; display:flex; align-items:center; justify-content:space-between; gap:12px;
+    position:sticky; top:0; z-index:30;
+  }
+  .admin-topbar .welcome{font-family:'Sora',sans-serif; font-weight:700; font-size:17px;}
+  .admin-topbar .sub{font-size:12px; color:var(--muted); margin-top:1px;}
+  .admin-content{padding:20px; max-width:980px; width:100%;}
+  .sidebar-toggle-btn{display:none;}
+
+  .donut-wrap{display:flex; flex-direction:column; align-items:center; gap:6px;}
+  .donut-wrap canvas{max-width:170px; max-height:170px;}
+  .donut-center-label{font-family:'Sora',sans-serif; font-weight:800; font-size:22px;}
+  .donut-sub{font-size:12px; color:var(--muted);}
+
+  .grid-2col{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+
+  @media (max-width: 880px){
+    .admin-sidebar{
+      position:fixed; left:0; top:0; transform:translateX(-100%);
+      box-shadow:0 0 40px rgba(0,0,0,0.4);
+    }
+    .admin-sidebar.open{transform:translateX(0);}
+    .sidebar-toggle-btn{display:flex;}
+    .admin-content{padding:14px;}
+    .grid-2col{grid-template-columns:1fr;}
+    .admin-overlay{
+      position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:55; opacity:0; pointer-events:none; transition:.2s;
+    }
+    .admin-overlay.show{opacity:1; pointer-events:all;}
+  }
+
+  /* ===== Print / PDF styles ===== */
+  @media print{
+    .topbar, .submit-bar, .icon-btn, .pill, .nav-pills, .no-print{display:none !important;}
+    body{background:#fff !important; color:#111 !important;}
+    .wrap{max-width:100% !important; padding:0 !important;}
+    .card{box-shadow:none !important; border:1px solid #ccc !important; break-inside:avoid;}
+    .gauge-fill{background:#444 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+    .result-row.leader .gauge-fill{background:#b8860b !important;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.01ms !important; transition-duration:0.01ms !important;}
+  }
+
+  /* hidden file inputs */
+  .hidden-file-input{display:none;}
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<div class="seal-overlay" id="sealOverlay">
+  <div class="check-stamp">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+  <div class="confirm-text">Vote Recorded</div>
+  <div class="confirm-sub">Your vote has been recorded</div>
+</div>
+
+<input type="file" id="logoFileInput" class="hidden-file-input" accept="image/*">
+<input type="file" id="candPhotoFileInput" class="hidden-file-input" accept="image/*">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script>
+/* ============================================================
+   ELECTION DASHBOARD — pure localStorage, single admin
+   ============================================================ */
+
+const BRAND_LOGO_DATAURL = "data:image/png;base64,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";
+const LS_KEY = "electionDashboardState_v1";
+const ADMIN_USER_DEFAULT = "admin";
+const ADMIN_PASS_DEFAULT = "election2026";
+
+function uid(){ return Math.random().toString(36).slice(2,9); }
+function esc(s){ return (s||"").toString().replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+let state = {
+  electionTitle: "Student Council Election 2026",
+  instituteName: "",
+  logoDataUrl: null,
+  theme: "light",
+  adminUser: ADMIN_USER_DEFAULT,
+  adminPass: ADMIN_PASS_DEFAULT,
+  positions: [], // {id, title, candidates:[{id,name,symbol,photo,votes}]}
+  votingOpen: true,
+  resultsLive: false,
+  startTime: null, // ISO
+  endTime: null,   // ISO
+  useSchedule: false
+};
+
+function loadLocal(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(raw) state = { ...state, ...JSON.parse(raw) };
+  }catch(e){}
+  // Defensive: guard against stale/partial saved state missing admin credentials
+  if(!state.adminUser) state.adminUser = ADMIN_USER_DEFAULT;
+  if(!state.adminPass) state.adminPass = ADMIN_PASS_DEFAULT;
+}
+function saveLocal(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){ console.warn("save failed", e); }
+}
+function sd(){ saveLocal(); }
+
+/* ---------------- Router/UI state ---------------- */
+let view = "vote"; // vote | results | admin-login | admin
+let isAdmin = false;
+let adminTab = "dashboard"; // dashboard | elections | candidates | settings
+let sidebarOpen = false;
+let justVoted = false; // session-only flag, resets when "next voter" is tapped
+let selections = {};
+let adminUserInputVal = "", adminPassInputVal = "", loginError = "";
+let chartInstances = {};
+
+function setView(v){ view = v; render(); }
+
+function applyTheme(){
+  document.documentElement.setAttribute("data-theme", state.theme === "dark" ? "dark" : "light");
+}
+function toggleTheme(){
+  state.theme = state.theme === "dark" ? "light" : "dark";
+  sd(); applyTheme(); render();
+}
+
+/* ---------------- Schedule logic ---------------- */
+function nowWithinSchedule(){
+  if(!state.useSchedule) return true;
+  const now = Date.now();
+  const s = state.startTime ? new Date(state.startTime).getTime() : null;
+  const e = state.endTime ? new Date(state.endTime).getTime() : null;
+  if(s && now < s) return false;
+  if(e && now > e) return false;
+  return true;
+}
+function scheduleStatusLabel(){
+  if(!state.useSchedule) return null;
+  const now = Date.now();
+  const s = state.startTime ? new Date(state.startTime).getTime() : null;
+  const e = state.endTime ? new Date(state.endTime).getTime() : null;
+  if(s && now < s) return { phase:"upcoming", text:`Voting starts: ${fmtDateTime(state.startTime)}` };
+  if(e && now > e) return { phase:"ended", text:`Voting ended: ${fmtDateTime(state.endTime)}` };
+  if(e) return { phase:"open", text:`Voting closes: ${fmtDateTime(state.endTime)}` };
+  return { phase:"open", text:"Voting is open" };
+}
+function fmtDateTime(iso){
+  if(!iso) return "";
+  try{
+    const d = new Date(iso);
+    return d.toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  }catch(e){ return iso; }
+}
+
+function votingIsActuallyOpen(){
+  return state.votingOpen && nowWithinSchedule();
+}
+
+/* ---------------- Voting logic ---------------- */
+function hasVoted(){ return justVoted; }
+function selectCandidate(posId, candId){
+  if(hasVoted() || !votingIsActuallyOpen()) return;
+  selections[posId] = candId;
+  render();
+}
+function allPositionsSelected(){
+  return state.positions.length > 0 && state.positions.every(p => selections[p.id]);
+}
+function submitVote(){
+  if(!allPositionsSelected()) return;
+  state.positions.forEach(p=>{
+    const cid = selections[p.id];
+    const cand = p.candidates.find(c=>c.id===cid);
+    if(cand) cand.votes = (cand.votes||0) + 1;
+  });
+  justVoted = true;
+  sd();
+
+  const overlay = document.getElementById("sealOverlay");
+  overlay.classList.add("show");
+  setTimeout(()=>{
+    overlay.classList.remove("show");
+    // Reset for the next voter on this same device automatically
+    selections = {};
+    justVoted = false;
+    setView("vote");
+  }, 1500);
+}
+
+/* ---------------- Admin logic ---------------- */
+function tryAdminLogin(){
+  const u = (adminUserInputVal || "").trim();
+  const p = (adminPassInputVal || "").trim();
+  if(u === (state.adminUser || "").trim() && p === (state.adminPass || "").trim()){
+    isAdmin = true; loginError=""; setView("admin");
+  } else {
+    loginError = "Incorrect username or password";
+    render();
+  }
+}
+function logoutAdmin(){ isAdmin=false; setView("vote"); }
+
+function addPosition(title){
+  if(!title || !title.trim()) return;
+  state.positions.push({ id: uid(), title: title.trim(), candidates: [] });
+  sd(); render();
+}
+function removePosition(posId){
+  if(!confirm("Remove this position?")) return;
+  state.positions = state.positions.filter(p=>p.id!==posId);
+  sd(); render();
+}
+function addCandidate(posId, name, symbol, photoDataUrl){
+  if(!name || !name.trim()) return;
+  const pos = state.positions.find(p=>p.id===posId);
+  if(!pos) return;
+  pos.candidates.push({ id: uid(), name: name.trim(), symbol: (symbol||"").trim().slice(0,2), photo: photoDataUrl || null, votes:0 });
+  sd(); render();
+}
+function removeCandidate(posId, candId){
+  const pos = state.positions.find(p=>p.id===posId);
+  if(!pos) return;
+  pos.candidates = pos.candidates.filter(c=>c.id!==candId);
+  sd(); render();
+}
+function toggleVoting(){ state.votingOpen = !state.votingOpen; sd(); render(); }
+function toggleResultsLive(){ state.resultsLive = !state.resultsLive; sd(); render(); }
+function toggleSchedule(){ state.useSchedule = !state.useSchedule; sd(); render(); }
+function resetAllVotes(){
+  if(!confirm("Reset all votes? This cannot be undone.")) return;
+  state.positions.forEach(p=> p.candidates.forEach(c=> c.votes = 0));
+  sd(); render();
+}
+function updateTitle(t){ state.electionTitle = t; sd(); }
+function updateInstitute(t){ state.instituteName = t; sd(); }
+function updateStartTime(t){ state.startTime = t || null; sd(); render(); }
+function updateEndTime(t){ state.endTime = t || null; sd(); render(); }
+function updateAdminUser(t){ state.adminUser = t || ADMIN_USER_DEFAULT; sd(); }
+function updateAdminPass(t){ state.adminPass = t || ADMIN_PASS_DEFAULT; sd(); }
+
+/* ---------------- File -> DataURL helper ---------------- */
+function fileToDataUrl(file, maxDim, cb){
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const img = new Image();
+    img.onload = function(){
+      let { width, height } = img;
+      if(width > maxDim || height > maxDim){
+        if(width > height){ height = Math.round(height * maxDim/width); width = maxDim; }
+        else { width = Math.round(width * maxDim/height); height = maxDim; }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, width, height);
+      cb(canvas.toDataURL("image/jpeg", 0.82));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+let pendingCandPhotoTarget = null; // {posId, inputElId}
+let pendingCandPhotos = {}; // posId -> dataUrl (for new candidate form)
+
+/* ---------------- Render: top bar ---------------- */
+function topbarHtml(){
+  return `
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-logo">
+        <img src="${state.logoDataUrl || BRAND_LOGO_DATAURL}" alt="logo">
+      </div>
+      <div class="brand-text">
+        <span class="eyebrow">${esc(state.instituteName || "Election")}</span>
+        <span class="title">${esc(state.electionTitle)}</span>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="icon-btn no-print" id="themeToggleBtn" title="Theme">${state.theme==='dark' ? '☀️' : '🌙'}</button>
+    </div>
+  </div>
+  <div class="wrap" style="padding-bottom:0;">
+    <div class="nav-pills no-print" style="margin-bottom:14px;">
+      <button class="pill ${view==='vote'?'active':''}" data-nav="vote">Vote</button>
+      <button class="pill ${view==='results'?'active':''}" data-nav="results">Results</button>
+      <button class="pill ${(view==='admin'||view==='admin-login')?'active':''}" data-nav="${isAdmin?'admin':'admin-login'}">Admin</button>
+    </div>
+  </div>`;
+}
+
+function statusStripHtml(){
+  const sched = scheduleStatusLabel();
+  const open = votingIsActuallyOpen();
+  let text = open ? "Voting is open" : "Voting is closed";
+  let timeText = sched ? sched.text : "";
+  return `<div class="status-strip ${open?'open':'closed'}">
+    <span class="status-dot ${open?'open':'closed'}"></span>
+    <span class="label">${text}</span>
+    ${timeText ? `<span class="time">${esc(timeText)}</span>` : ""}
+  </div>`;
+}
+
+/* ---------------- Render: vote view ---------------- */
+function voteViewHtml(){
+  if(state.positions.length === 0){
+    return `<div class="wrap">
+      ${statusStripHtml()}
+      <div class="card empty-state">
+        <div class="glyph">🗳️</div>
+        <h3>Election not set up yet</h3>
+        <p class="small-muted">Admin needs to add positions and candidates.</p>
+      </div>
+    </div>`;
+  }
+  const open = votingIsActuallyOpen();
+  if(!open){
+    return `<div class="wrap">
+      ${statusStripHtml()}
+      <div class="card empty-state">
+        <div class="glyph">🔒</div>
+        <h3>Voting not available</h3>
+        <p class="small-muted">Please try again later, or check the results page.</p>
+      </div>
+    </div>`;
+  }
+
+  let html = `<div class="wrap">
+    ${statusStripHtml()}
+    <div class="ballot-header">
+      <div class="logo-circle">
+        <img src="${state.logoDataUrl || BRAND_LOGO_DATAURL}" alt="logo">
+      </div>
+      <div>
+        <h2>${esc(state.electionTitle)}</h2>
+        <div class="sub">${esc(state.instituteName || "Cast your vote for each position below")}</div>
+      </div>
+    </div>`;
+
+  state.positions.forEach(pos=>{
+    html += `<div class="card position-card">
+      <h3>${esc(pos.title)}</h3>
+      <div class="candidate-grid">`;
+    if(pos.candidates.length === 0){
+      html += `<p class="small-muted">No candidates added.</p>`;
+    } else {
+      pos.candidates.forEach(c=>{
+        const sel = selections[pos.id] === c.id;
+        html += `<div class="candidate-row ${sel?'selected':''}" data-select-pos="${pos.id}" data-select-cand="${c.id}">
+          ${c.photo ? `<img class="cand-photo" src="${c.photo}" alt="">` : `<div class="cand-photo-fallback">${esc(c.symbol || c.name.slice(0,1).toUpperCase())}</div>`}
+          <div style="flex:1; min-width:0;">
+            <div class="cand-name">${esc(c.name)}</div>
+            <div class="cand-meta">${esc(pos.title)}</div>
+          </div>
+          <div class="check-ring"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        </div>`;
+      });
+    }
+    html += `</div></div>`;
+  });
+
+  html += `</div>`;
+
+  const filled = state.positions.filter(p=>selections[p.id]).length;
+  html += `<div class="submit-bar no-print">
+    <div class="progress-txt mono">${filled} / ${state.positions.length} selected</div>
+    <button class="btn btn-primary btn-sm" id="submitVoteBtn" ${allPositionsSelected()?'':'disabled'}>Submit Vote</button>
+  </div>`;
+
+  return html;
+}
+
+/* ---------------- Render: results view ---------------- */
+function resultsViewHtml(){
+  if(state.positions.length === 0){
+    return `<div class="wrap"><div class="card empty-state"><div class="glyph">📊</div><h3>Results not available</h3></div></div>`;
+  }
+  if(!state.resultsLive){
+    return `<div class="wrap"><div class="card empty-state">
+      <div class="glyph">⏳</div>
+      <h3>Results not published yet</h3>
+      <p class="small-muted">Admin will publish the results once counting is complete.</p>
+    </div></div>`;
+  }
+
+  let html = `<div class="wrap">
+    <div class="card" style="text-align:center;">
+      <span class="live-badge"><span class="live-dot"></span> Live Results</span>
+      <h2 style="font-size:19px;margin-top:8px;">${esc(state.electionTitle)}</h2>
+      <div class="small-muted" style="margin-top:2px;">${esc(state.instituteName || "")}</div>
+    </div>
+
+    <div class="btn-row no-print" style="margin-bottom:16px;">
+      <button class="btn btn-outline btn-sm" id="downloadPdfBtn" style="flex:1;">📄 Download PDF</button>
+    </div>`;
+
+  state.positions.forEach(pos=>{
+    const total = pos.candidates.reduce((s,c)=>s+(c.votes||0),0);
+    const maxVotes = Math.max(0, ...pos.candidates.map(c=>c.votes||0));
+    const chartId = `chart_${pos.id}`;
+
+    html += `<div class="card">
+      <div class="eyebrow">${esc(pos.title)}</div>`;
+    if(pos.candidates.length===0){
+      html += `<p class="small-muted">No candidates.</p>`;
+    } else {
+      const sorted = [...pos.candidates].sort((a,b)=>(b.votes||0)-(a.votes||0));
+      sorted.forEach(c=>{
+        const pct = total>0 ? Math.round(((c.votes||0)/total)*100) : 0;
+        const isLeader = total>0 && (c.votes||0)===maxVotes && maxVotes>0;
+        html += `<div class="result-row ${isLeader?'leader':''}">
+          <div class="rname">
+            <div class="left">
+              ${c.photo ? `<img class="mini-photo" src="${c.photo}" alt="">` : ``}
+              ${isLeader ? `<span class="badge-crown">🏆</span>` : ``}
+              <span class="name">${esc(c.name)}</span>
+            </div>
+            <span class="pct">${pct}%</span>
+          </div>
+          <div class="gauge-track"><div class="gauge-fill" data-width="${pct}" style="width:0%"></div></div>
+          <div class="vote-count mono">${c.votes||0} votes</div>
+        </div>`;
+      });
+      html += `<div class="small-muted mono" style="margin-top:6px; margin-bottom:14px;">Total votes: ${total}</div>
+      <div class="chart-card"><canvas id="${chartId}" data-pos-id="${pos.id}"></canvas></div>`;
+    }
+    html += `</div>`;
+  });
+
+  html += `<div class="footer-credit">Generated ${esc(new Date().toLocaleString('en-GB'))}</div></div>`;
+  return html;
+}
+
+/* ---------------- Render: admin login ---------------- */
+function adminLoginHtml(){
+  return `<div class="login-screen">
+    <div class="login-card">
+      <div class="seal">
+        <img src="${state.logoDataUrl || BRAND_LOGO_DATAURL}" alt="logo">
+      </div>
+      <h1>Admin Login</h1>
+      <p>Login to manage the election</p>
+      <label>Username</label>
+      <input type="text" id="adminUserInput" value="${esc(adminUserInputVal)}" autocomplete="username">
+      <label>Password</label>
+      <input type="password" id="adminPassInput" value="${esc(adminPassInputVal)}" autocomplete="current-password">
+      <div class="error-text">${esc(loginError)}</div>
+      <button class="btn btn-primary" id="adminLoginBtn">Login</button>
+      <button class="btn btn-ghost" data-nav="vote" style="margin-top:10px;">Back to Voting</button>
+    </div>
+  </div>`;
+}
+
+/* ---------------- Render: admin dashboard ---------------- */
+function setAdminTab(t){ adminTab = t; sidebarOpen = false; render(); }
+function toggleSidebar(){ sidebarOpen = !sidebarOpen; render(); }
+
+function sidebarNavItems(){
+  return [
+    { id:"dashboard", icon:"📊", label:"Dashboard" },
+    { id:"elections", icon:"🗳️", label:"Elections" },
+    { id:"candidates", icon:"👥", label:"Candidates" },
+    { id:"settings", icon:"⚙️", label:"Settings" }
+  ];
+}
+
+function adminShellHtml(){
+  const items = sidebarNavItems();
+  return `
+  <div class="admin-shell">
+    <div class="admin-overlay ${sidebarOpen?'show':''}" id="sidebarOverlay"></div>
+    <div class="admin-sidebar ${sidebarOpen?'open':''}" id="adminSidebar">
+      <div class="sb-brand">
+        <div class="logo-mini"><img src="${state.logoDataUrl || BRAND_LOGO_DATAURL}" alt=""></div>
+        <div class="nm">${esc(state.instituteName || "Election Hub")}</div>
+      </div>
+      <div class="sb-nav">
+        ${items.map(it => `<button class="sb-item ${adminTab===it.id?'active':''}" data-admin-tab="${it.id}"><span class="ic">${it.icon}</span> ${it.label}</button>`).join('')}
+      </div>
+      <div class="sb-footer">
+        <button class="sb-item" data-nav="vote"><span class="ic">↩️</span> Voting Screen</button>
+        <button class="sb-item" id="logoutBtn"><span class="ic">🚪</span> Logout</button>
+      </div>
+    </div>
+    <div class="admin-main">
+      <div class="admin-topbar">
+        <button class="icon-btn sidebar-toggle-btn" id="sidebarToggleBtn">☰</button>
+        <div style="flex:1; min-width:0;">
+          <div class="welcome">${adminTab==='dashboard'?'Welcome, Admin':items.find(i=>i.id===adminTab)?.label || ''}</div>
+          <div class="sub">${esc(state.electionTitle)}</div>
+        </div>
+        <button class="icon-btn" id="themeToggleBtn" title="Theme">${state.theme==='dark' ? '☀️' : '🌙'}</button>
+      </div>
+      <div class="admin-content">
+        ${adminTab==='dashboard' ? adminDashboardTab() : ''}
+        ${adminTab==='elections' ? adminElectionsTab() : ''}
+        ${adminTab==='candidates' ? adminCandidatesTab() : ''}
+        ${adminTab==='settings' ? adminSettingsTab() : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
+function adminDashboardTab(){
+  const totalVotes = state.positions.reduce((s,p)=> s + p.candidates.reduce((s2,c)=>s2+(c.votes||0),0), 0);
+  const totalCandidates = state.positions.reduce((s,p)=> s + p.candidates.length, 0);
+  return `
+    <div class="stat-grid">
+      <div class="stat-card accent-primary">
+        <div class="num mono">${state.positions.length}</div>
+        <div class="lbl">Positions</div>
+      </div>
+      <div class="stat-card accent-success">
+        <div class="num mono">${totalCandidates}</div>
+        <div class="lbl">Candidates</div>
+      </div>
+      <div class="stat-card accent-accent">
+        <div class="num mono">${totalVotes}</div>
+        <div class="lbl">Total Votes Cast</div>
+      </div>
+      <div class="stat-card ${votingIsActuallyOpen() ? 'accent-success' : 'accent-danger'}">
+        <div class="num" style="font-size:16px;">${votingIsActuallyOpen() ? 'OPEN' : 'CLOSED'}</div>
+        <div class="lbl">Voting Status</div>
+      </div>
+    </div>
+    <div class="grid-2col">
+      <div class="card">
+        <div class="card-title">Votes by Position</div>
+        <div class="card-sub">Votes received per position</div>
+        <div class="chart-card"><canvas id="dashBarChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Positions Filled</div>
+        <div class="card-sub">Positions with candidates added</div>
+        <div class="donut-wrap">
+          <canvas id="dashDonutChart"></canvas>
+          <div class="donut-center-label">${state.positions.filter(p=>p.candidates.length>0).length}/${state.positions.length || 0}</div>
+          <div class="donut-sub">positions ready</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Quick Actions</div>
+      <div class="btn-row" style="margin-top:8px;">
+        <button class="btn btn-primary btn-sm" data-admin-tab="elections" style="flex:1;">+ Add Position/Candidate</button>
+        <button class="btn btn-outline btn-sm" data-nav="results" style="flex:1;">View Results</button>
+      </div>
+    </div>
+    <div class="footer-credit">Single-admin mode · Data stored on this device</div>
+  `;
+}
+
+function adminElectionsTab(){
+  let html = `
+    <div class="card">
+      <div class="eyebrow">Election Controls</div>
+      <div class="toggle-row">
+        <div class="meta">
+          <div class="t">Voting is open</div>
+          <div class="d">Students will be able to vote</div>
+        </div>
+        <button class="switch ${state.votingOpen?'on':''}" id="toggleVotingBtn"></button>
+      </div>
+      <hr class="divider">
+      <div class="toggle-row">
+        <div class="meta">
+          <div class="t">Publish Live Results</div>
+          <div class="d">Everyone will be able to see the results</div>
+        </div>
+        <button class="switch ${state.resultsLive?'on':''}" id="toggleResultsBtn"></button>
+      </div>
+      <hr class="divider">
+      <div class="toggle-row">
+        <div class="meta">
+          <div class="t">Schedule Voting (Start/End)</div>
+          <div class="d">Voting will open only during the set time window</div>
+        </div>
+        <button class="switch ${state.useSchedule?'on':''}" id="toggleScheduleBtn"></button>
+      </div>
+      ${state.useSchedule ? `
+        <label style="margin-top:10px;">Start Time</label>
+        <input type="datetime-local" id="startTimeInput" value="${state.startTime ? state.startTime.slice(0,16) : ''}">
+        <label>End Time</label>
+        <input type="datetime-local" id="endTimeInput" value="${state.endTime ? state.endTime.slice(0,16) : ''}">
+      ` : ``}
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">Election Details</div>
+      <label>Election Name</label>
+      <input type="text" id="titleInput" value="${esc(state.electionTitle)}">
+    </div>
+
+    <div class="card">
+      <div class="eyebrow" style="color:var(--danger);">Danger Zone</div>
+      <button class="btn btn-outline" id="resetVotesBtn" style="border-color:var(--danger); color:var(--danger);">Reset All Votes</button>
+    </div>
+  `;
+  return html;
+}
+
+function adminCandidatesTab(){
+  let html = `
+    <div class="card admin-section">
+      <div class="eyebrow">Positions & Candidates</div>
+      <div class="row-flex">
+        <input type="text" id="newPosInput" placeholder="New position (e.g. Leader, Secretary)">
+        <button class="btn btn-primary btn-sm" id="addPosBtn">Add</button>
+      </div>
+  `;
+
+  state.positions.forEach(pos=>{
+    html += `<div class="position-admin-card">
+      <div class="ph">
+        <strong>${esc(pos.title)}</strong>
+        <button class="icon-btn-sm danger" data-remove-pos="${pos.id}" title="Remove">✕</button>
+      </div>`;
+    pos.candidates.forEach(c=>{
+      html += `<div class="candidate-admin-row">
+        ${c.photo ? `<img class="cand-photo" src="${c.photo}" alt="">` : `<div class="cand-photo-fallback">${esc(c.symbol||c.name.slice(0,1).toUpperCase())}</div>`}
+        <span class="nm">${esc(c.name)}</span>
+        <span class="mono small-muted">${c.votes||0}v</span>
+        <button class="icon-btn-sm danger" data-remove-cand-pos="${pos.id}" data-remove-cand="${c.id}">✕</button>
+      </div>`;
+    });
+    const pendingPhoto = pendingCandPhotos[pos.id];
+    html += `<div class="row-flex" style="margin-top:10px; align-items:center;">
+        <button class="photo-pick-btn" data-pick-photo-pos="${pos.id}">${pendingPhoto ? `<img src="${pendingPhoto}">` : '📷'}</button>
+        <input type="text" placeholder="Name" id="candName-${pos.id}" style="flex:2;">
+        <button class="btn btn-outline btn-sm" data-add-cand="${pos.id}">+</button>
+      </div>
+    </div>`;
+  });
+
+  html += `</div>`;
+  return html;
+}
+
+function adminSettingsTab(){
+  return `
+    <div class="card">
+      <div class="eyebrow">Branding</div>
+      <label>Institution Name (School/Madrasa)</label>
+      <input type="text" id="instituteInput" value="${esc(state.instituteName)}" placeholder="School name">
+      <label>Logo</label>
+      ${state.logoDataUrl
+        ? `<div class="upload-preview">
+             <img src="${state.logoDataUrl}" alt="logo">
+             <div class="meta"><div class="nm">Logo uploaded</div><div class="sz">Tap to replace</div></div>
+             <button class="icon-btn-sm danger" id="removeLogoBtn">✕</button>
+           </div>`
+        : `<div class="upload-box" id="logoUploadBox">
+             <div class="icon">🏫</div>
+             <div class="txt">Tap to upload logo</div>
+           </div>`}
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">Admin Login</div>
+      <label>Username</label>
+      <input type="text" id="adminUserSettingInput" value="${esc(state.adminUser)}">
+      <label>Password</label>
+      <input type="text" id="adminPassSettingInput" value="${esc(state.adminPass)}">
+      <div class="small-muted">Only these credentials can be used to access the admin panel.</div>
+    </div>
+  `;
+}
+
+/* ---------------- Main render ---------------- */
+function render(){
+  applyTheme();
+  const app = document.getElementById("app");
+
+  if(view === "admin-login" && !isAdmin){
+    app.innerHTML = adminLoginHtml();
+    bindEvents();
+    return;
+  }
+  if(view === "admin" && !isAdmin){
+    view = "admin-login";
+    app.innerHTML = adminLoginHtml();
+    bindEvents();
+    return;
+  }
+
+  if(view === "admin"){
+    app.innerHTML = adminShellHtml();
+    bindEvents();
+    requestAnimationFrame(()=> renderAdminDashboardCharts());
+    return;
+  }
+
+  let body = "";
+  if(view === "vote") body = voteViewHtml();
+  else if(view === "results") body = resultsViewHtml();
+
+  app.innerHTML = topbarHtml() + body;
+  bindEvents();
+
+  requestAnimationFrame(()=>{
+    document.querySelectorAll(".gauge-fill").forEach(el=>{
+      const w = el.getAttribute("data-width");
+      requestAnimationFrame(()=> el.style.width = w + "%");
+    });
+    if(view === "results") renderCharts();
+  });
+}
+
+/* ---------------- Charts ---------------- */
+function renderCharts(){
+  Object.values(chartInstances).forEach(ch => { try{ ch.destroy(); }catch(e){} });
+  chartInstances = {};
+  if(typeof Chart === "undefined") return;
+
+  const isDark = state.theme === "dark";
+  const gridColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(21,25,43,0.07)";
+  const textColor = isDark ? "#B7BACB" : "#4A4F66";
+
+  state.positions.forEach(pos=>{
+    const canvas = document.getElementById(`chart_${pos.id}`);
+    if(!canvas || pos.candidates.length === 0) return;
+    const sorted = [...pos.candidates].sort((a,b)=>(b.votes||0)-(a.votes||0));
+    const colors = ["#3F5BF6","#F5A623","#1FAE6B","#E0455A","#8A8FA3","#6C82FF"];
+    const ctx = canvas.getContext("2d");
+    chartInstances[pos.id] = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: sorted.map(c=>c.name),
+        datasets: [{
+          data: sorted.map(c=>c.votes||0),
+          backgroundColor: sorted.map((_,i)=>colors[i % colors.length]),
+          borderRadius: 8,
+          maxBarThickness: 40
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display:false } },
+        scales: {
+          x: { ticks:{ color:textColor, font:{family:'Inter'} }, grid:{ display:false } },
+          y: { beginAtZero:true, ticks:{ color:textColor, stepSize:1, precision:0 }, grid:{ color:gridColor } }
+        }
+      }
+    });
+  });
+}
+
+function renderAdminDashboardCharts(){
+  if(typeof Chart === "undefined") return;
+  Object.keys(chartInstances).forEach(k=>{
+    if(k.startsWith("dash_")){ try{ chartInstances[k].destroy(); }catch(e){} delete chartInstances[k]; }
+  });
+
+  const isDark = state.theme === "dark";
+  const gridColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(21,25,43,0.07)";
+  const textColor = isDark ? "#B7BACB" : "#4A4F66";
+  const colors = ["#3F5BF6","#F5A623","#1FAE6B","#E0455A","#8A8FA3","#6C82FF"];
+
+  const barCanvas = document.getElementById("dashBarChart");
+  if(barCanvas){
+    const labels = state.positions.map(p=>p.title);
+    const data = state.positions.map(p=> p.candidates.reduce((s,c)=>s+(c.votes||0),0));
+    chartInstances["dash_bar"] = new Chart(barCanvas.getContext("2d"), {
+      type:'bar',
+      data:{ labels, datasets:[{ data, backgroundColor: labels.map((_,i)=>colors[i%colors.length]), borderRadius:8, maxBarThickness:36 }] },
+      options:{
+        responsive:true,
+        plugins:{ legend:{ display:false } },
+        scales:{
+          x:{ ticks:{ color:textColor }, grid:{ display:false } },
+          y:{ beginAtZero:true, ticks:{ color:textColor, stepSize:1, precision:0 }, grid:{ color:gridColor } }
+        }
+      }
+    });
+  }
+
+  const donutCanvas = document.getElementById("dashDonutChart");
+  if(donutCanvas){
+    const filled = state.positions.filter(p=>p.candidates.length>0).length;
+    const empty = Math.max(0, state.positions.length - filled);
+    chartInstances["dash_donut"] = new Chart(donutCanvas.getContext("2d"), {
+      type:'doughnut',
+      data:{
+        labels:["Ready", "Pending"],
+        datasets:[{ data:[filled || 0, empty || (state.positions.length===0?1:0)], backgroundColor:["#3F5BF6", isDark ? "#2A2E42" : "#E7E9F3"], borderWidth:0 }]
+      },
+      options:{ responsive:true, cutout:"72%", plugins:{ legend:{ display:false } } }
+    });
+  }
+}
+
+/* ---------------- PDF download (print-based) ---------------- */
+function downloadResultsPdf(){
+  window.print();
+}
+
+/* ---------------- Event binding ---------------- */
+function bindEvents(){
+  document.querySelectorAll("[data-nav]").forEach(el=>{
+    el.addEventListener("click", ()=> setView(el.getAttribute("data-nav")));
+  });
+  document.querySelectorAll("[data-select-pos]").forEach(el=>{
+    el.addEventListener("click", ()=> selectCandidate(el.getAttribute("data-select-pos"), el.getAttribute("data-select-cand")));
+  });
+  const submitBtn = document.getElementById("submitVoteBtn");
+  if(submitBtn) submitBtn.addEventListener("click", submitVote);
+
+  const themeToggleBtn = document.getElementById("themeToggleBtn");
+  if(themeToggleBtn) themeToggleBtn.addEventListener("click", toggleTheme);
+
+  document.querySelectorAll("[data-admin-tab]").forEach(el=>{
+    el.addEventListener("click", ()=> setAdminTab(el.getAttribute("data-admin-tab")));
+  });
+  const sidebarToggleBtn = document.getElementById("sidebarToggleBtn");
+  if(sidebarToggleBtn) sidebarToggleBtn.addEventListener("click", toggleSidebar);
+  const sidebarOverlay = document.getElementById("sidebarOverlay");
+  if(sidebarOverlay) sidebarOverlay.addEventListener("click", toggleSidebar);
+
+  const downloadPdfBtn = document.getElementById("downloadPdfBtn");
+  if(downloadPdfBtn) downloadPdfBtn.addEventListener("click", downloadResultsPdf);
+
+  // Admin login
+  const adminUserInput = document.getElementById("adminUserInput");
+  const adminPassInput = document.getElementById("adminPassInput");
+  if(adminUserInput) adminUserInput.addEventListener("input", e=> adminUserInputVal = e.target.value);
+  if(adminPassInput) adminPassInput.addEventListener("input", e=> adminPassInputVal = e.target.value);
+  const adminLoginBtn = document.getElementById("adminLoginBtn");
+  if(adminLoginBtn) adminLoginBtn.addEventListener("click", tryAdminLogin);
+  if(adminPassInput) adminPassInput.addEventListener("keydown", e=>{ if(e.key==="Enter") tryAdminLogin(); });
+
+  // Admin dashboard
+  const titleInput = document.getElementById("titleInput");
+  if(titleInput) titleInput.addEventListener("change", e=> updateTitle(e.target.value));
+  const instituteInput = document.getElementById("instituteInput");
+  if(instituteInput) instituteInput.addEventListener("change", e=> updateInstitute(e.target.value));
+
+  const logoUploadBox = document.getElementById("logoUploadBox");
+  if(logoUploadBox) logoUploadBox.addEventListener("click", ()=> document.getElementById("logoFileInput").click());
+  const removeLogoBtn = document.getElementById("removeLogoBtn");
+  if(removeLogoBtn) removeLogoBtn.addEventListener("click", ()=>{ state.logoDataUrl = null; sd(); render(); });
+
+  const toggleVotingBtn = document.getElementById("toggleVotingBtn");
+  if(toggleVotingBtn) toggleVotingBtn.addEventListener("click", toggleVoting);
+  const toggleResultsBtn = document.getElementById("toggleResultsBtn");
+  if(toggleResultsBtn) toggleResultsBtn.addEventListener("click", toggleResultsLive);
+  const toggleScheduleBtn = document.getElementById("toggleScheduleBtn");
+  if(toggleScheduleBtn) toggleScheduleBtn.addEventListener("click", toggleSchedule);
+
+  const startTimeInput = document.getElementById("startTimeInput");
+  if(startTimeInput) startTimeInput.addEventListener("change", e=> updateStartTime(e.target.value));
+  const endTimeInput = document.getElementById("endTimeInput");
+  if(endTimeInput) endTimeInput.addEventListener("change", e=> updateEndTime(e.target.value));
+
+  const addPosBtn = document.getElementById("addPosBtn");
+  if(addPosBtn) addPosBtn.addEventListener("click", ()=>{
+    const input = document.getElementById("newPosInput");
+    addPosition(input.value);
+    input.value="";
+  });
+  document.querySelectorAll("[data-remove-pos]").forEach(el=>{
+    el.addEventListener("click", ()=>removePosition(el.getAttribute("data-remove-pos")));
+  });
+  document.querySelectorAll("[data-pick-photo-pos]").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      pendingCandPhotoTarget = el.getAttribute("data-pick-photo-pos");
+      document.getElementById("candPhotoFileInput").click();
+    });
+  });
+  document.querySelectorAll("[data-add-cand]").forEach(el=>{
+    const posId = el.getAttribute("data-add-cand");
+    el.addEventListener("click", ()=>{
+      const nameInput = document.getElementById(`candName-${posId}`);
+      const photoUrl = pendingCandPhotos[posId] || null;
+      addCandidate(posId, nameInput.value, "", photoUrl);
+      delete pendingCandPhotos[posId];
+    });
+  });
+  document.querySelectorAll("[data-remove-cand]").forEach(el=>{
+    el.addEventListener("click", ()=> removeCandidate(el.getAttribute("data-remove-cand-pos"), el.getAttribute("data-remove-cand")));
+  });
+
+  const adminUserSettingInput = document.getElementById("adminUserSettingInput");
+  if(adminUserSettingInput) adminUserSettingInput.addEventListener("change", e=> updateAdminUser(e.target.value));
+  const adminPassSettingInput = document.getElementById("adminPassSettingInput");
+  if(adminPassSettingInput) adminPassSettingInput.addEventListener("change", e=> updateAdminPass(e.target.value));
+
+  const resetVotesBtn = document.getElementById("resetVotesBtn");
+  if(resetVotesBtn) resetVotesBtn.addEventListener("click", resetAllVotes);
+  const logoutBtn = document.getElementById("logoutBtn");
+  if(logoutBtn) logoutBtn.addEventListener("click", logoutAdmin);
+}
+
+/* ---------------- Global file inputs ---------------- */
+document.getElementById("logoFileInput").addEventListener("change", function(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  fileToDataUrl(file, 300, (dataUrl)=>{
+    state.logoDataUrl = dataUrl;
+    sd(); render();
+  });
+  e.target.value = "";
+});
+
+document.getElementById("candPhotoFileInput").addEventListener("change", function(e){
+  const file = e.target.files[0];
+  if(!file || !pendingCandPhotoTarget) return;
+  fileToDataUrl(file, 240, (dataUrl)=>{
+    pendingCandPhotos[pendingCandPhotoTarget] = dataUrl;
+    pendingCandPhotoTarget = null;
+    render();
+  });
+  e.target.value = "";
+});
+
+/* ---------------- Init ---------------- */
+(function init(){
+  loadLocal();
+  applyTheme();
+  render();
+  // periodic refresh so schedule-based open/close state updates live
+  setInterval(()=>{ if(state.useSchedule) render(); }, 30000);
+})();
+</script>
+</body>
+</html>
